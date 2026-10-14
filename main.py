@@ -105,13 +105,13 @@ for i in range (1, 4):
             train_target,
             batch_size=64,
             epochs=10,
-            verbose=0
+            verbose=1
          )
 
-         probabilities = ann.predict(test, verbose=0)
-         y_pred = (probabilities > 0.5).astype(int).flatten()
+         probabilities = ann.predict(test, verbose=1)
+         # y_pred = (probabilities > 0.5).astype(int).flatten()
 
-         accuracy = (y_pred == test_target.to_numpy()).mean()
+         # accuracy = (y_pred == test_target.to_numpy()).mean()
 
 # Determine which set of hyperparameters is best using the *validation* set. 
 # (Accuracy, of course, uses the test set)
