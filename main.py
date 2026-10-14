@@ -77,22 +77,22 @@ for i in range (1, 4):
          ann.add(tf.keras.layers.Dense(
             units=768, 
             activiation='relu',
-            kernel_regulaizer=tf.keras.regularizers.L2(l_two[ i ])))
+            kernel_regularizer=tf.keras.regularizers.L2(l_two[ i ])))
          ann.add(tf.kera.layers.GassianNoise(stddev = standardDeviation[ k ], seed=0))
          ann.add(tf.keras.layers.Dense(
             units=513, 
             activiation='relu',
-            kernel_regulaizer=tf.keras.regularizers.L2(l_two[ i ])))
+            kernel_regularizer=tf.keras.regularizers.L2(l_two[ i ])))
          ann.add(tf.keras.layers.Dropout(dropout[ j ], seed=0))
          ann.add(tf.keras.layers.Dense(
             units=513, 
             activiation='relu',
-            kernel_regulaizer=tf.keras.regularizers.L2(l_two[ i ])))
+            kernel_regularizer=tf.keras.regularizers.L2(l_two[ i ])))
          ann.add(tf.keras.layers.Dropout(dropout[ j ], seed=0))
          ann.add(tf.keras.layers.Dense(
             units=1, 
             activiation='sigmoid',
-            kernel_regulaizer=tf.keras.regularizers.L2(l_two[ i ])))
+            kernel_regularizer=tf.keras.regularizers.L2(l_two[ i ])))
 
          ann.compile( 
             optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
