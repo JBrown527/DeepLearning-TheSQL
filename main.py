@@ -62,37 +62,33 @@ print(uwuify.uwu("Let's train our test set!"))
 
 # Learn the model
 
-l_two = [ 0.0, 0.003, 0.01, 0.03 ]
-dropout = [0.0, 0.2, 0.5]
-standardDeviation = [ 0.0, 0.05, 0.15 ]
-
 # For each hyper parameter value we want to test
-for i in range (1, 4):
-   for j in range ( 1, 3 ):
-      for k in range ( 1, 3 ):
+for l_two in [ 0.0, 0.003, 0.01, 0.03 ]:
+   for dropout in [0.0, 0.2, 0.5]:
+      for standardDeviation in [ 0.0, 0.05, 0.15 ]:
          tf.keras.backend.clear_session()
          tf.keras.utils.set_random_seed(0)
 
          ann = tf.keras.models.Sequential()
          ann.add(tf.keras.layers.Dense(
             units=768, 
-            activiation='relu',
-            kernel_regularizer=tf.keras.regularizers.L2(l_two[ i ])))
-         ann.add(tf.kera.layers.GassianNoise(stddev = standardDeviation[ k ], seed=0))
+            activation='relu',
+            kernel_regularizer=tf.keras.regularizers.L2(l_two)))
+         ann.add(tf.keras.layers.GaussianNoise(stddev = standardDeviation, seed=0))
          ann.add(tf.keras.layers.Dense(
             units=513, 
-            activiation='relu',
-            kernel_regularizer=tf.keras.regularizers.L2(l_two[ i ])))
-         ann.add(tf.keras.layers.Dropout(dropout[ j ], seed=0))
+            activation='relu',
+            kernel_regularizer=tf.keras.regularizers.L2(l_two)))
+         ann.add(tf.keras.layers.Dropout(dropout, seed=0))
          ann.add(tf.keras.layers.Dense(
             units=513, 
-            activiation='relu',
-            kernel_regularizer=tf.keras.regularizers.L2(l_two[ i ])))
-         ann.add(tf.keras.layers.Dropout(dropout[ j ], seed=0))
+            activation='relu',
+            kernel_regularizer=tf.keras.regularizers.L2(l_two)))
+         ann.add(tf.keras.layers.Dropout(dropout, seed=0))
          ann.add(tf.keras.layers.Dense(
             units=1, 
-            activiation='sigmoid',
-            kernel_regularizer=tf.keras.regularizers.L2(l_two[ i ])))
+            activation='sigmoid',
+            kernel_regularizer=tf.keras.regularizers.L2(l_two)))
 
          ann.compile( 
             optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
