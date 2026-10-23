@@ -10,8 +10,8 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 import sklearn
+from sklearn.metrics import log_loss, confusion_matrix
 from sklearn.preprocessing import StandardScaler
-import uwuify
 
 tf.config.threading.set_intra_op_parallelism_threads(1)
 tf.config.threading.set_inter_op_parallelism_threads(1)
@@ -27,40 +27,41 @@ tf.config.experimental.enable_op_determinism()
 # Temporary, comment out / delete before submitting
 data = pd.read_csv( "Patient_Deterioration_10000.csv" )
 
-# Data already standardized
+# Separate features and target, converting both to float32
+X = data.drop(columns=['Deterioration_Next_6h']).to_numpy(dtype=np.float32)
+y = data['Deterioration_Next_6h'].to_numpy(dtype=np.float32)
 
-# Split the data
-remaining, test = sklearn.model_selection.train_test_split( 
-   data, 
-   test_size = 0.20, 
-   random_state= 0
-)
-train, validation = sklearn.model_selection.train_test_split( 
-   remaining, 
-   test_size = 0.20, 
-   random_state= 0
+# Split into remaining data and test data
+X_remaining, test, y_remaining, test_target = sklearn.model_selection.train_test_split(
+    X,
+    y,
+    test_size=0.20,
+    random_state=0
 )
 
-train_target = train['Deterioration_Next_6h']
-validation_target = validation['Deterioration_Next_6h']
-test_target = test['Deterioration_Next_6h']
+# Split remaining data into training and validation
+train, validation, train_target, validation_target = sklearn.model_selection.train_test_split(
+    X_remaining,
+    y_remaining,
+    test_size=0.20,
+    random_state=0
+)
 
-train = train.drop(columns=['Deterioration_Next_6h'])
-validation = validation.drop(columns=['Deterioration_Next_6h'])
-test = test.drop(columns=['Deterioration_Next_6h'])
-
+# Standardize features
 scaler = StandardScaler()
-train = scaler.fit_transform( train )
-validation = scaler.transform( validation )
-test = scaler.transform( test )
 
-train = train.astype( np.float32 )
-validation = validation.astype( np.float32 )
-test = test.astype( np.float32 )
-
-print(uwuify.uwu("Let's train our test set!"))
+train = scaler.fit_transform(train).astype(np.float32)
+validation = scaler.transform(validation).astype(np.float32)
+test = scaler.transform(test).astype(np.float32)
 
 # Learn the model
+
+results = []
+best_model = None
+best_accuracy = -1
+best_loss = float('inf')
+best_params = None
+baseline_accuracy = None
 
 # For each hyper parameter value we want to test
 for l_two in [ 0.0, 0.003, 0.01, 0.03 ]:
@@ -70,10 +71,8 @@ for l_two in [ 0.0, 0.003, 0.01, 0.03 ]:
          tf.keras.utils.set_random_seed(0)
 
          ann = tf.keras.models.Sequential()
-         ann.add(tf.keras.layers.Dense(
-            units=768, 
-            activation='relu',
-            kernel_regularizer=tf.keras.regularizers.L2(l_two)))
+         ann.add(tf.keras.layers.Input(
+            shape=(768,)))
          ann.add(tf.keras.layers.GaussianNoise(stddev = standardDeviation, seed=0))
          ann.add(tf.keras.layers.Dense(
             units=513, 
@@ -104,38 +103,101 @@ for l_two in [ 0.0, 0.003, 0.01, 0.03 ]:
             verbose=0
          )
 
-         probabilities = ann.predict(test, verbose=0)
-         # y_pred = (probabilities > 0.5).astype(int).flatten()
+         probabilities = ann.predict(validation, verbose=0)
+         
+         y_pred = (probabilities > 0.5).astype(int).flatten()
 
-         # accuracy = (y_pred == test_target.to_numpy()).mean()
+         accuracy = (y_pred == validation_target).mean()
+
+         validation_loss = log_loss(
+            validation_target,
+            probabilities.flatten(),
+            labels=[0, 1]
+         )
+         
+         if best_model is None:
+            better = True
+
+         elif accuracy > best_accuracy:
+            better = True
+
+         elif accuracy == best_accuracy:
+            if validation_loss < best_loss:
+               better = True
+
+            elif validation_loss == best_loss:
+               if (l_two, dropout, standardDeviation) < best_params:
+                     better = True
+               else:
+                     better = False
+
+            else:
+               better = False
+
+         else:
+            better = False
+
+         if better:
+            best_model = ann
+            best_accuracy = accuracy
+            best_loss = validation_loss
+            best_params = (l_two, dropout, standardDeviation)
+            
+         if l_two == 0.0 and dropout == 0.0 and standardDeviation == 0.0:
+            baseline_probabilities = ann.predict(test, verbose=0)
+
+            baseline_predictions = (baseline_probabilities > 0.5).astype(int).flatten()
+
+            baseline_accuracy = (baseline_predictions == test_target).mean()
+                  
+         results.append([l_two, dropout, standardDeviation, accuracy * 100])
 
 # Determine which set of hyperparameters is best using the *validation* set. 
 # (Accuracy, of course, uses the test set)
 
+
 # Create (replace if exists) the excel file called "Project2_Results.xlsx", 
 # one workbook called "Search Results"
 
-# First row column headings: L2 strength, Dropout rate, 
-# Gaussian noise standard deviation, Validation accuracy (%)
+results_df = pd.DataFrame(
+    results,
+    columns=[
+        "L2 strength",
+        "Dropout rate",
+        "Gaussian noise standard deviation",
+        "Validation accuracy (%)"
+    ]
+)
 
-# Create 36 rows, one for each combination
-# Accuracy desplayed as number between 0 and 100 (2 decimal places)
+# output excel file, also enforce accuracy decimal digits
+with pd.ExcelWriter("Project2_Results.xlsx", engine="xlsxwriter") as writer:
+    results_df.to_excel(writer, sheet_name="Search Results", index=False)
+
+    worksheet = writer.sheets["Search Results"]
+    number_format = writer.book.add_format({"num_format": "0.00"})
+
+    worksheet.set_column(3, 3, 25, number_format)
+
+
+# use the best model, get the stats
+probabilities = best_model.predict(test, verbose=0)
+
+predictions = (probabilities > 0.5).astype(int).flatten()
+
+test_accuracy = (predictions == test_target).mean()
+
+cm = confusion_matrix(test_target, predictions, labels=[0,1])
 
 # Print baseline accuracy, selected DNN test accuracy, selected DNN confusion matrix
+print(f'Baseline Test Accuracy: {baseline_accuracy * 100:.2f}%')
+print(f'Selected DNN Test Accuracy: {test_accuracy * 100:.2f}%')
 
+print("Selected DNN Confusion Matrix:")
+print(cm)
 
+tn, fp, fn, tp = cm.ravel()
 
-"""
-      ___
-    /'   `\
-   /  o o  \
-  |    ^    |
-   \  '-'  /
-    '-----'
-   /|     |\
-  / |     | \
-     \___/
-    /     \
-   /_/   \_\
-
-"""
+print(f"True Negatives: {tn}")
+print(f"False Positives: {fp}")
+print(f"False Negatives: {fn}")
+print(f"True Positives: {tp}")
