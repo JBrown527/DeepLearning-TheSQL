@@ -20,12 +20,12 @@ tf.config.experimental.enable_op_determinism()
 # Main function
 
 # Command Line Input, Uncomment before submission
-# print("File")
-# data_file = input()
-# data = pd.read_csv( train_file )
+print("File")
+data_file = input()
+data = pd.read_csv( data_file )
 
 # Temporary, comment out / delete before submitting
-data = pd.read_csv( "Patient_Deterioration_10000.csv" )
+# data = pd.read_csv( "Patient_Deterioration_10000.csv" )
 
 # Separate features and target, converting both to float32
 X = data.drop(columns=['Deterioration_Next_6h']).to_numpy(dtype=np.float32)
@@ -99,7 +99,7 @@ for l_two in [ 0.0, 0.003, 0.01, 0.03 ]:
             train,
             train_target,
             batch_size=64,
-            epochs=10,
+            epochs=100,
             verbose=0
          )
 
