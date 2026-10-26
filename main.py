@@ -1,3 +1,11 @@
+# Team Members: Brodie O'Hara, Dyl Nebrida, Jonathan Brown
+# Roles:
+# DNN Design: Jonathan Brown
+# DNN Implementation: Jonathan Brown, Dyl Nebrida
+# Data Partitioning and Standardization: Jonathan Brown, Dyl Nebrida, Brodie O'Hera
+# Hyperparameter Search: Brodie O'Hera
+# Experimentation and Evaluation: Jonathan Brown, Dyl Nebrida, Brodie O'Hera
+
 import os
 import logging
 
